@@ -7,12 +7,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <future>
+#include<Windows.h>
 
 using namespace std;
 
-int sizeofGrid=20;
-int actualGrid [20][20];
-int buffergrid [20][20];
+int sizeofGrid=90;
+int actualGrid [90][90];
+int buffergrid [90][90];
 int printArray();
 int checkNeighborCells();
 int initialGrid();
@@ -23,11 +24,31 @@ int counti=0;
 int countj=0;
 int numberOfCells = 0;
 
-vector<vector<int> > bufferGrid_C ( 20, vector<int> ( 20 ) );
+//vector<vector<int> > bufferGrid_C ( 20, vector<int> ( 20 ) );
 
-vector<future <vector<vector<int> >>> bufferGrid_Copy;
+//vector<future <vector<vector<int> >>> bufferGrid_Copy;
 
-void wait ( int seconds )
+vector<future <void>> bufferGrid_Copy;
+
+void SetWindow(int Width, int Height) 
+{ 
+	_COORD coord; 
+	coord.X = Width; 
+	coord.Y = Height; 
+
+	_SMALL_RECT Rect; 
+	Rect.Top = 0; 
+	Rect.Left = 0; 
+	Rect.Bottom = Height - 1; 
+	Rect.Right = Width - 1; 
+
+	HANDLE Handle = GetStdHandle(STD_OUTPUT_HANDLE);      // Get Handle 
+	SetConsoleScreenBufferSize(Handle, coord);            // Set Buffer Size 
+	SetConsoleWindowInfo(Handle, TRUE, &Rect);            // Set Window Size 
+} 
+
+
+void wait ( int seconds)
 {
 	clock_t endwait;
 	endwait = clock () + seconds * CLOCKS_PER_SEC ;
@@ -35,6 +56,7 @@ void wait ( int seconds )
 }
 
 int main(int argc, char *argv[]){
+	SetWindow(1000,1000); 
 	numberOfCells = atoi(argv[1]);
 	clock_t t1,t2;
 	t1=clock();
@@ -54,7 +76,7 @@ int main(int argc, char *argv[]){
 	cout<<"4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction."<<'\n';
 
 	initialGrid();
-	for(int i=0;i<steps;i++){
+	for(int i=0;i<steps;i++){	
 		wait(1);
 		printArray();
 		checkNeighborCells();
@@ -73,7 +95,7 @@ int printArray(){
 	for(int i=0;i<sizeofGrid;i++){
 		printf("\n");
 		for(int j=0;j<sizeofGrid;j++){
-			cout<<actualGrid[i][j]<<" ";
+			cout<<actualGrid[i][j];
 		}
 	}
 
@@ -81,67 +103,73 @@ int printArray(){
 }
 void tryingToParallelize(int row, int column, int icount, int jcount)
 {	
-	if(icount < 20 && jcount < 20)
+	if(icount >= sizeofGrid)
+		icount = sizeofGrid-1;
+	if(jcount >= sizeofGrid)
+		jcount = sizeofGrid-1;
+	//future <void> bbb;
+	/*if(icount < 90 && jcount < 90)
+	{*/
+	neighborCount = 0;
+	for(int i=row;i<=icount;i++)
 	{
-		neighborCount = 0;
-		for(int i=row;i<=icount;i++)
+		//cout<<'\n';
+		for(int j=column;j<=jcount;j++)
 		{
-			//cout<<'\n';
-			for(int j=column;j<=jcount;j++)
-			{
-				neighborCount = 0;
-				if(actualGrid[i-1][j]==1){
-					neighborCount+=1;
-				}
+			neighborCount = 0;
+			if(actualGrid[i-1][j]==1){
+				neighborCount+=1;
+			}
 
-				if(actualGrid[i-1][j-1]==1){
-					neighborCount+=1;	
-				}
+			if(actualGrid[i-1][j-1]==1){
+				neighborCount+=1;	
+			}
 
-				if(actualGrid[i-1][j+1]==1){
-					neighborCount+=1;
-				}
+			if(actualGrid[i-1][j+1]==1){
+				neighborCount+=1;
+			}
 
-				if(actualGrid[i+1][j]==1){
-					neighborCount+=1;
-				}
+			if(actualGrid[i+1][j]==1){
+				neighborCount+=1;
+			}
 
-				if(actualGrid[i+1][j+1]==1){
-					neighborCount+=1;
-				}
+			if(actualGrid[i+1][j+1]==1){
+				neighborCount+=1;
+			}
 
-				if(actualGrid[i+1][j-1]==1){
-					neighborCount+=1;
-				}
+			if(actualGrid[i+1][j-1]==1){
+				neighborCount+=1;
+			}
 
-				if(actualGrid[i][j-1]==1){
-					neighborCount+=1;
-				}
+			if(actualGrid[i][j-1]==1){
+				neighborCount+=1;
+			}
 
-				if(actualGrid[i][j+1]==1){
-					neighborCount+=1;
-				}
-				buffergrid[i][j]=0;
+			if(actualGrid[i][j+1]==1){
+				neighborCount+=1;
+			}
+			buffergrid[i][j]=0;
 
-				if(actualGrid[i][j]==1){
-					if(neighborCount==3||neighborCount==2){
-						//bufferGrid_C[i][j]=1;
-						buffergrid[i][j]=1;
-					}
-					else{
-						//bufferGrid_C[i][j]=0;
-						buffergrid[i][j]=0;
-					}
-				}
-
-				if(actualGrid[i][j]==0&&neighborCount==3){
+			if(actualGrid[i][j]==1){
+				if(neighborCount==3||neighborCount==2){
 					//bufferGrid_C[i][j]=1;
 					buffergrid[i][j]=1;
 				}
+				else{
+					//bufferGrid_C[i][j]=0;
+					buffergrid[i][j]=0;
+				}
+			}
+
+			if(actualGrid[i][j]==0&&neighborCount==3){
+				//bufferGrid_C[i][j]=1;
+				buffergrid[i][j]=1;
 			}
 		}
 	}
-	//return bufferGrid_C;
+	/*}*/
+	//return bufferGrid_Copy;
+	//return bufferGrid_Copy;
 }
 
 int checkNeighborCells(){
@@ -157,7 +185,12 @@ int checkNeighborCells(){
 	grid[i][j+1]
 	grid[i][j-1]
 	*/
-	bufferGrid_Copy.clear();
+
+	//bufferGrid_Copy.clear();
+
+
+	//auto future_value=" ";
+	future<void> future_value;
 	int p = 0;
 	for(int i=1;i<=sizeofGrid-1;i=i+numberOfCells){
 		if(i==1)
@@ -166,12 +199,16 @@ int checkNeighborCells(){
 			if(j==1)
 				countj = numberOfCells;
 			neighborCount=0;
-			async(launch::async, tryingToParallelize, i , j, counti, countj);
+			future_value = async(launch::async, tryingToParallelize, i , j, counti, countj);
+
+			//trying.push_back(async(launch::async, tryingToParallelize, i , j, counti, countj));
 			neighborCount=0;
 			countj = countj + numberOfCells;
 		}
 		counti = counti + numberOfCells;
 	}
+	future_value.wait();
+	//swapGrids(trying);
 	return 0;
 }
 
